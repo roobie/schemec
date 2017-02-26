@@ -1,5 +1,6 @@
 
-(define-module (foo bar)
-  #:export (frob))
+(define-module (omni main)
+  #:export (omni/init))
 
-(define (frob x) (* 2 x))
+(define (omni/init)
+  (ecs/create-entity))

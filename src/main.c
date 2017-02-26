@@ -24,48 +24,8 @@
 
 #include <libguile.h>
 
-#define E_OUT_OF_MEMORY 2
-
-#define BUF_SIZE 4096	// How many bytes to read at a time
-
-int
-readline(char *buffer, int buf_size) {
-  while (1) {
-    int c = getchar();
-    if (c == EOF) {
-      break;
-    }
-
-    if (!isspace(c)) {
-      ungetc(c, stdin);
-      break;
-    }
-  }
-
-  int i = 0;
-  while (1) {
-    int c = getchar();
-    if (isspace(c) || c == EOF) {
-      buffer[i] = 0;
-      break;
-    }
-    buffer[i] = c;
-    if (i == buf_size - 1) {
-      buf_size += buf_size;
-      buffer = (char*)realloc(buffer, buf_size);
-
-      if (buffer == NULL) {
-        return E_OUT_OF_MEMORY;
-      }
-    }
-    ++i;
-  }
-
-  return 0;
-}
-
 static SCM
-my_hostname (void)
+env_hostname (void)
 {
   char *s = getenv("HOSTNAME");
   if (s == NULL) {
@@ -76,11 +36,24 @@ my_hostname (void)
   }
 }
 
+#define INITIAL_ENTITY_COUNT 1024
+int entities[INITIAL_ENTITY_COUNT] = { 0 };
+int next_entity_id = 1;
+
+static SCM
+ecs_create_entity(void* callback)
+{
+  int id = next_entity_id;
+  next_entity_id += 1;
+  return scm_from_int(id);
+}
+
 static void
 inner_main(void *closure, int argc, char **argv)
 {
   /* preparation */
-  scm_c_define_gsubr("my-hostname", 0, 0, 0, my_hostname);
+  scm_c_define_gsubr("env-hostname", 0, 0, 0, env_hostname);
+  scm_c_define_gsubr("ecs/create-entity", 0, 0, 0, ecs_create_entity);
   scm_c_primitive_load("./scheme/main.scm");
 
   // start shell
