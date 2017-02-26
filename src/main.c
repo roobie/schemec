@@ -1,75 +1,96 @@
 /*
 
-	main.c -- Template main()
+  main.c -- Template main()
 
-	Copyright © 2015-2016 Fletcher T. Penney.
+  This program is free software you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation either version 2 of the License, or
+  (at your option) any later version.
 
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
 
-	This program is free software you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation either version 2 of the License, or
-	(at your option) any later version.
-	
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
-	
-	You should have received a copy of the GNU General Public License
-	along with this program if not, write to the Free Software
-	Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
-	
+  You should have received a copy of the GNU General Public License
+  along with this program if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+
 */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 
-#include "d_string.h"
+#include <libguile.h>
 
-#define kBUFFERSIZE 4096	// How many bytes to read at a time
+#define E_OUT_OF_MEMORY 2
 
-DString * stdin_buffer() {
-	/* Read from stdin and return a GString *
-		`buffer` will need to be freed elsewhere */
+#define BUF_SIZE 4096	// How many bytes to read at a time
 
-	char chunk[kBUFFERSIZE];
-	size_t bytes;
-
-	DString * buffer = d_string_new("");
-
-    while ((bytes = fread(chunk, 1, kBUFFERSIZE, stdin)) > 0) {
-    	d_string_append_c_array(buffer, chunk, bytes);
+int
+readline(char *buffer, int buf_size) {
+  while (1) {
+    int c = getchar();
+    if (c == EOF) {
+      break;
     }
 
-	fclose(stdin);
-
-	return buffer;
-}
-
-DString * scan_file(char * fname) {
-	/* Read from stdin and return a GString *
-		`buffer` will need to be freed elsewhere */
-
-	char chunk[kBUFFERSIZE];
-	size_t bytes;
-
-	FILE * file;
-
-	if ((file = fopen(fname, "r")) == NULL ) {
-		return NULL;
-	}
-
-	DString * buffer = d_string_new("");
-
-    while ((bytes = fread(chunk, 1, kBUFFERSIZE, file)) > 0) {
-    	d_string_append_c_array(buffer, chunk, bytes);
+    if (!isspace(c)) {
+      ungetc(c, stdin);
+      break;
     }
+  }
 
-	fclose(file);
+  int i = 0;
+  while (1) {
+    int c = getchar();
+    if (isspace(c) || c == EOF) {
+      buffer[i] = 0;
+      break;
+    }
+    buffer[i] = c;
+    if (i == buf_size - 1) {
+      buf_size += buf_size;
+      buffer = (char*)realloc(buffer, buf_size);
 
-	return buffer;
+      if (buffer == NULL) {
+        return E_OUT_OF_MEMORY;
+      }
+    }
+    ++i;
+  }
+
+  return 0;
 }
 
-int main( int argc, char** argv ) {
-	/* Make your program do whatever you want */
+static SCM
+my_hostname (void)
+{
+  char *s = getenv("HOSTNAME");
+  if (s == NULL) {
+    return SCM_BOOL_F;
+  }
+  else {
+    return scm_from_locale_string(s);
+  }
+}
+
+static void
+inner_main(void *closure, int argc, char **argv)
+{
+  /* preparation */
+  scm_c_define_gsubr("my-hostname", 0, 0, 0, my_hostname);
+  scm_c_primitive_load("./scheme/main.scm");
+
+  // start shell
+  scm_shell(argc, argv);
+  /* after exit */
+}
+
+int
+main(int argc, char **argv)
+{
+  scm_boot_guile(argc, argv, inner_main, 0);
+  return 0; /* never reached, see inner_main */
 }

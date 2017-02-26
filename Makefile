@@ -1,12 +1,17 @@
 BUILD_DIR = build
 XCODE_BUILD_DIR = build-xcode
 XCODE_DEBUG_BUILD_DIR = build-xcode-debug
+GUILE_C_FLAGS := $(shell guile-config compile)
+C_FLAGS := "-std=c11 $(GUILE_C_FLAGS)"
+
+#GUILE_LIBS = $(shell guile-config link)
+#C_FLAGS = "-std=c11 $(GUILE_C_FLAGS) $(GUILE_LIBS)"
 
 # The release target will perform additional optimization
 .PHONY : release
 release: $(BUILD_DIR)
 	cd $(BUILD_DIR); \
-	cmake -DCMAKE_BUILD_TYPE=Release ..
+	cmake -DCMAKE_BUILD_TYPE=Release .. -DCMAKE_C_FLAGS=$(C_FLAGS) -DCMAKE_C_COMPILER=clang
 
 # Build zip file package
 .PHONY : zip
@@ -18,7 +23,7 @@ zip: $(BUILD_DIR)
 .PHONY : debug
 debug: $(BUILD_DIR)
 	cd $(BUILD_DIR); \
-	cmake -DTEST=1 ..
+	cmake -DTEST=1 .. -DCMAKE_C_FLAGS=$(C_FLAGS)
 
 # analyze target enables use of clang's scan-build (if installed)
 # will then need to run 'scan-build make' to compile and analyze
@@ -27,7 +32,7 @@ debug: $(BUILD_DIR)
 .PHONY : analyze
 analyze: $(BUILD_DIR)
 	cd $(BUILD_DIR); \
-	scan-build cmake -DTEST=1 ..
+	scan-build cmake -DTEST=1 .. -DCMAKE_C_FLAGS=$(C_FLAGS)
 
 # Create xcode project
 # You can then build within XCode, or using the commands:

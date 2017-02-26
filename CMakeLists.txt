@@ -23,7 +23,6 @@ string(REGEX REPLACE " " "_" My_Project_Title_Caps ${My_Project_Title_Caps} )
 
 project (${My_Project_Title})
 
-
 # =========================
 # Build Submodules (if any)
 # =========================
@@ -285,9 +284,9 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 	# You may wish to disable this.
 	#
 	
-	set (CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-	set (BUILD_SHARED_LIBRARIES OFF)
-	set (CMAKE_EXE_LINKER_FLAGS "-static")
+	# set (CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+	# set (BUILD_SHARED_LIBRARIES OFF)
+	# set (CMAKE_EXE_LINKER_FLAGS "-static")
 
 	# Some libraries need to be linked on some Linux builds
 	if (DEFINED TEST)
@@ -313,17 +312,18 @@ endif (WIN32)
 # SET_TARGET_PROPERTIES(libFOO PROPERTIES PREFIX "")
 
 # Create a command-line app?
-# if (NOT DEFINED TEST)
-# 	add_executable(main
-# 		src/main.c
-# 		src/d_string.c
-# 		src/d_string.h
-# 		${header_files}
-# 	)
+if (NOT DEFINED TEST)
+	add_executable(main
+		src/main.c
+		${header_files}
+	)
 # 
 #	Link the library to the app?
 #	target_link_libraries(main libFOO)
-# endif()
+	target_link_libraries(main guile-2.0)
+
+  file(COPY src/scheme DESTINATION .)
+endif()
 
 # Xcode settings for fat binaries
 # set_target_properties(libFOO PROPERTIES XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH "NO")
