@@ -1,6 +1,11 @@
 .DS_Store
 CHANGELOG-UNRELEASED
 documentation
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
 
 # Developer Tools
 *.pbxuser
@@ -18,6 +23,32 @@ profile
 *.moved-aside
 DerivedData
 .idea/
+# Precompiled Headers
+*.gch
+*.pch
 
 build-xcode
 build-xcode-debug
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Debug files
+*.dSYM/
+*.su
