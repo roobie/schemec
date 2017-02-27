@@ -27,36 +27,23 @@
 
 #include "lib/queue.h"
 
-static SCM
-env_hostname (void) {
-  char *s = getenv("HOSTNAME");
-  if (s == NULL) {
-    return SCM_BOOL_F;
-  }
-  else {
-    return scm_from_locale_string(s);
-  }
-}
-
-typedef struct {
+struct component_t {
   char *name;
   void *data;
-} component_t;
+};
 
-typedef LIST_HEAD(entities, int) entities_head;
+struct entry {
+  int id;
+  LIST_ENTRY(entry) entries;      /* List. */
+};
+LIST_HEAD(entities_listhead, entry) entities_head = { NULL };
 
-#define INITIAL_ENTITY_COUNT 1024
-#define INITIAL_COMPONENT_COUNT 8
-#define DEFAULT_POOL_SIZE 1024
-
-int total_entity_count = 0;
-int entities[INITIAL_ENTITY_COUNT] = { 0 };
 int next_entity_id = 1;
-component_t *ent2comp_map[INITIAL_ENTITY_COUNT][INITIAL_COMPONENT_COUNT] = { 0 };
-component_t *comp_recycle_pool[DEFAULT_POOL_SIZE] = { 0 };
+// component_t *ent2comp_map[INITIAL_ENTITY_COUNT][INITIAL_COMPONENT_COUNT] = { 0 };
+// component_t *comp_recycle_pool[DEFAULT_POOL_SIZE] = { 0 };
 
 static bool
-component_t_recycle(component_t *component) {
+component_t_recycle(struct component_t *component) {
   if (component == NULL) {
     return false;
   }
@@ -69,13 +56,14 @@ _ecs_create_entity() {
   int entity_id = next_entity_id;
   next_entity_id += 1;
 
-  entities[total_entity_count] = entity_id;
-  total_entity_count += 1;
-  component_t *ptr = malloc(INITIAL_COMPONENT_COUNT * sizeof(component_t));
-  if (ptr == NULL) {
-    return -1;
-  }
-  *ent2comp_map[entity_id] = ptr;
+  //component_t *ptr = malloc(INITIAL_COMPONENT_COUNT * sizeof(component_t));
+  //if (ptr == NULL) {
+  //  return -1;
+  //}
+
+  struct entry *new_entry = malloc(sizeof(struct entry));
+  new_entry->id = entity_id;
+  LIST_INSERT_HEAD(&entities_head, new_entry, entries);
 
   return entity_id;
 }
@@ -87,19 +75,6 @@ ecs_create_entity() {
 
 static bool
 _ecs_destroy_entity(int id) {
-  for (int i = 0; i < total_entity_count; ++i) {
-    if (entities[i] == id) {
-      entities[i] = 0;
-      total_entity_count -= 1;
-      component_t *entity_components = *ent2comp_map[id];
-      int j = 0;
-      do {
-        ++j;
-      } while(component_t_recycle(&entity_components[j]));
-      return true;
-    }
-  }
-
   return false;
 }
 
@@ -115,10 +90,15 @@ ecs_destroy_entity(SCM scm_id) {
 
 static SCM
 ecs_all_entities() {
-  SCM vec = scm_make_vector(scm_from_int(total_entity_count), 0);
-  for (int i = 0; i < total_entity_count; ++i) {
-    scm_vector_set_x(vec, scm_from_int(i), scm_from_int(entities[i]));
+  //for (int i = 0; i < total_entity_count; ++i) {
+  //  scm_vector_set_x(vec, scm_from_int(i), scm_from_int(entities[i]));
+  //}
+  int count = 0;
+  struct entry *np;
+  LIST_FOREACH(np, &entities_head, entries) {
+    count += 1;
   }
+  SCM vec = scm_make_vector(scm_from_int(count), 0);
   return vec;
 }
 
@@ -183,6 +163,7 @@ inner_main(void *closure, int argc, char **argv) {
 
 int
 main(int argc, char **argv) {
+  LIST_INIT(&entities_head);
   scm_boot_guile(argc, argv, inner_main, 0);
   return 0; // never reached, see inner_main
 }
