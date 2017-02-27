@@ -25,6 +25,8 @@
 
 #include <libguile.h>
 
+#include "lib/queue.h"
+
 static SCM
 env_hostname (void) {
   char *s = getenv("HOSTNAME");
@@ -64,6 +66,8 @@ static int
 _ecs_create_entity() {
   int entity_id = next_entity_id;
   next_entity_id += 1;
+
+  entities[total_entity_count] = entity_id;
   total_entity_count += 1;
   component_t *ptr = malloc(INITIAL_COMPONENT_COUNT * sizeof(component_t));
   if (ptr == NULL) {
@@ -107,15 +111,24 @@ ecs_destroy_entity(SCM scm_id) {
   return SCM_BOOL_F;
 }
 
+static SCM
+ecs_all_entities() {
+  SCM vec = scm_make_vector(scm_from_int(total_entity_count), 0);
+  for (int i = 0; i < total_entity_count; ++i) {
+    scm_vector_set_x(vec, scm_from_int(i), scm_from_int(entities[i]));
+  }
+  return vec;
+}
+
 static void
 init_ecs_module(void *data) {
-  // scm_c_define_gsubr("env-hostname", 0, 0, 0, env_hostname);
-
   // arguments are: name, required-, optional-, rest-params, c_definition
   scm_c_define_gsubr("ecs/create-entity", 0, 0, 0, ecs_create_entity);
   scm_c_define_gsubr("ecs/destroy-entity", 1, 0, 0, ecs_destroy_entity);
+  scm_c_define_gsubr("ecs/all-entities", 0, 0, 0, ecs_all_entities);
   scm_c_export("ecs/create-entity",
                "ecs/destroy-entity",
+               "ecs/all-entities",
                NULL);
 }
 
