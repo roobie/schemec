@@ -43,6 +43,8 @@ typedef struct {
   void *data;
 } component_t;
 
+typedef LIST_HEAD(entities, int) entities_head;
+
 #define INITIAL_ENTITY_COUNT 1024
 #define INITIAL_COMPONENT_COUNT 8
 #define DEFAULT_POOL_SIZE 1024
